@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gitube — Impressions 3D</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,Arial;background:#f5f3f8;color:#17131d}
+header{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid #ddd;display:flex;justify-content:space-between;align-items:center;padding:14px 5%;gap:15px}
+.logo{font-weight:900;font-size:1.4rem}.logo b{color:#7040d9}.nav button,.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:800;cursor:pointer}.nav button{background:transparent}.btn{background:#7040d9;color:#fff}.btn.dark{background:#19151f}.btn.light{background:#eee;color:#222}
+main{max-width:1100px;margin:auto;padding:25px 18px 70px}.hero{padding:60px 35px;border-radius:25px;background:linear-gradient(135deg,#19151f,#7040d9);color:#fff}.hero h1{font-size:clamp(2.5rem,7vw,5rem);line-height:.95;margin:10px 0}.hero p{max-width:650px;color:#ddd}.section{margin-top:55px}.top{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:20px}.search,input,textarea,select{padding:12px;border:1px solid #ccc;border-radius:10px;background:#fff;font:inherit}.search{width:min(340px,100%)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}.card,.panel{background:#fff;border:1px solid #ddd;border-radius:18px;padding:18px}.photo{height:190px;border-radius:13px;background:#eee;display:grid;place-items:center;font-size:85px;margin:-18px -18px 16px}.card h3{margin:0 0 5px}.price{font-weight:900;color:#7040d9;font-size:1.1rem}.stock{font-size:.9rem;color:#666;margin:7px 0 14px}.hidden{display:none!important}.chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.chip{border:1px solid #bbb;border-radius:999px;padding:8px 12px;background:#fff;cursor:pointer}.chip.selected{background:#7040d9;color:#fff;border-color:#7040d9}.field{margin:14px 0}.field label{display:block;font-weight:800;margin-bottom:6px}.field input,.field textarea,.field select{width:100%}.order{max-width:700px;margin:auto}.notice{padding:12px;border-radius:10px;background:#f0eaff;margin:15px 0}.adminGrid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.productRow{border-top:1px solid #ddd;padding:16px 0}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.small{padding:8px}.danger{background:#c93535}.success{background:#e8f7ed;padding:14px;border-radius:10px;color:#17632e}.muted{color:#68636e}
+footer{text-align:center;padding:30px;color:#777}
+@media(max-width:700px){header{align-items:flex-start}.adminGrid{grid-template-columns:1fr}.hero{padding:40px 24px}.top{display:block}.search{margin-top:12px}}
+</style>
+</head>
+<body>
+<header><div class="logo">🐱 <b>Gitube</b></div><div class="nav">
+<button onclick="page('home')">Accueil</button><button onclick="page('catalogue')">Catalogue</button><button onclick="page('admin')">Mon espace</button>
+</div></header>
+<main>
+<section id="home" class="page">
+<div class="hero"><div><small>IMPRESSIONS 3D</small><h1>Gitube</h1><p>Choisis une impression, sélectionne ta couleur et passe ta demande. Le paiement se fait en main propre.</p><button class="btn" onclick="page('catalogue')">Voir le catalogue</button></div></div>
+</section>
+
+<section id="catalogue" class="page hidden section">
+<div class="top"><div><small>CATALOGUE</small><h2>Mes impressions 3D</h2></div><input class="search" id="search" placeholder="Rechercher…" oninput="renderProducts()"></div>
+<div id="products" class="grid"></div>
+</section>
+
+<section id="product" class="page hidden section">
+<div class="panel order"><button class="btn light" onclick="page('catalogue')">← Retour</button><div id="productDetail"></div></div>
+</section>
+
+<section id="admin" class="page hidden section">
+<div id="loginBox" class="panel order">
+<small>ESPACE PRIVÉ</small><h2>Mon espace Gitube</h2><p class="muted">Prototype : choisis un code administrateur ci-dessous. Pour une vraie sécurité en ligne, il faudra ensuite connecter une authentification.</p>
+<div class="field"><label>Code</label><input id="adminCode" type="password" placeholder="1234"></div>
+<button class="btn" onclick="login()">Entrer</button>
+</div>
+<div id="dashboard" class="hidden">
+<div class="top"><div><small>ADMINISTRATION</small><h2>Mon espace</h2></div><button class="btn dark" onclick="logout()">Se déconnecter</button></div>
+<div class="adminGrid">
+<div class="panel"><h3>Ajouter une impression</h3>
+<div class="field"><label>Nom</label><input id="newName" placeholder="Support téléphone"></div>
+<div class="field"><label>Prix (€)</label><input id="newPrice" type="number" min="0" step=".01" placeholder="5"></div>
+<div class="field"><label>Stock</label><input id="newStock" type="number" min="0" value="10"></div>
+<div class="field"><label>Couleurs (séparées par des virgules)</label><input id="newColors" placeholder="Noir, Blanc, Rouge, Bleu"></div>
+<div class="field"><label>Photo / image</label><input id="newImage" type="file" accept="image/*"></div>
+<button class="btn" onclick="addProduct()">Ajouter</button>
+</div>
+<div class="panel"><h3>Commandes</h3><div id="orders"></div></div>
+</div>
+<div class="panel section"><h3>Mes produits</h3><div id="adminProducts"></div></div>
+</div>
+</section>
+</main>
+<footer>Gitube · Impressions 3D · Paiement en main propre</footer>
+
+<script>
+const ADMIN_CODE="1234";
+let products=JSON.parse(localStorage.getItem("gitube_products")||"null")||[
+{id:1,name:"Chat",price:5,stock:8,colors:["Noir","Blanc","Violet"],emoji:"🐱",image:""},
+{id:2,name:"Support téléphone",price:6,stock:12,colors:["Noir","Blanc","Bleu"],emoji:"📱",image:""},
+{id:3,name:"Dragon",price:10,stock:4,colors:["Noir","Rouge","Vert"],emoji:"🐉",image:""}
+];
+let orders=JSON.parse(localStorage.getItem("gitube_orders")||"[]"), selected=null, selectedColor=null;
+function save(){localStorage.setItem("gitube_products",JSON.stringify(products));localStorage.setItem("gitube_orders",JSON.stringify(orders))}
+function page(id){document.querySelectorAll(".page").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");if(id==="catalogue")renderProducts();if(id==="admin")renderAdmin();scrollTo(0,0)}
+function renderProducts(){
+let q=(document.getElementById("search")?.value||"").toLowerCase();
+let list=products.filter(p=>p.name.toLowerCase().includes(q));
+document.getElementById("products").innerHTML=list.map(p=>`<article class="card"><div class="photo">${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;border-radius:13px">`:p.emoji}</div><h3>${p.name}</h3><div class="price">${p.price.toFixed(2)} €</div><div class="stock">${p.stock>0?`Stock : ${p.stock}`:"Rupture de stock"}</div><button class="btn" ${p.stock<1?"disabled":""} onclick="openProduct(${p.id})">Commander</button></article>`).join("")||"<p>Aucun résultat.</p>"
+}
+function openProduct(id){selected=products.find(p=>p.id===id);selectedColor=selected.colors[0];renderDetail();page("product")}
+function renderDetail(){
+let p=selected;
+document.getElementById("productDetail").innerHTML=`<div class="photo" style="margin-top:18px">${p.image?`<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;border-radius:13px">`:p.emoji}</div><small>IMPRESSION 3D</small><h2>${p.name}</h2><div class="price">${p.price.toFixed(2)} €</div><div class="stock">Stock disponible : ${p.stock}</div><h3>Choisir une couleur</h3><div class="chips">${p.colors.map(c=>`<button class="chip ${c===selectedColor?"selected":""}" onclick="chooseColor('${escapeAttr(c)}')">${c}</button>`).join("")}</div><div class="field"><label>Quantité</label><input id="qty" type="number" min="1" max="${p.stock}" value="1"></div><div class="field"><label>Ton nom *</label><input id="customer" placeholder="Prénom et nom"></div><div class="field"><label>Précision</label><textarea id="note" placeholder="Une remarque éventuelle…"></textarea></div><div class="notice">Paiement en main propre. Le prix affiché peut être modifié par le propriétaire à tout moment.</div><button class="btn" onclick="placeOrder()">Envoyer la commande</button>`
+}
+function escapeAttr(s){return s.replace(/'/g,"&#39;")}
+function chooseColor(c){selectedColor=c;renderDetail()}
+function placeOrder(){
+let p=selected,name=document.getElementById("customer").value.trim(),qty=Number(document.getElementById("qty").value),note=document.getElementById("note").value.trim();
+if(!name)return alert("Indique ton nom.");if(qty<1||qty>p.stock)return alert("Quantité indisponible.");
+orders.unshift({id:Date.now(),productId:p.id,product:p.name,color:selectedColor,qty,name,note,price:p.price*qty,status:"Nouvelle",date:new Date().toLocaleString("fr-FR")});
+p.stock-=qty;save();alert("Commande envoyée !");page("catalogue")
+}
+function login(){if(document.getElementById("adminCode").value===ADMIN_CODE){document.getElementById("loginBox").classList.add("hidden");document.getElementById("dashboard").classList.remove("hidden");renderAdmin()}else alert("Code incorrect.")}
+function logout(){document.getElementById("loginBox").classList.remove("hidden");document.getElementById("dashboard").classList.add("hidden")}
+function renderAdmin(){
+document.getElementById("orders").innerHTML=orders.length?orders.map(o=>`<div class="productRow"><b>${o.name}</b> — ${o.product}<br>🎨 ${o.color} · 🔢 ${o.qty} · 💶 ${o.price.toFixed(2)} €<br><small>${o.note||"Aucune précision"} · ${o.date}</small><div class="row" style="margin-top:8px"><button class="btn small" onclick="finishOrder(${o.id})">${o.status==="Terminée"?"Terminée":"Confirmer"}</button><button class="btn small danger" onclick="deleteOrder(${o.id})">Supprimer</button></div></div>`).join(""):"<p class='muted'>Aucune commande.</p>";
+document.getElementById("adminProducts").innerHTML=products.map(p=>`<div class="productRow"><b>${p.name}</b><div class="row"><label>Prix <input class="small" type="number" value="${p.price}" onchange="updatePrice(${p.id},this.value)"></label><label>Stock <input class="small" type="number" min="0" value="${p.stock}" onchange="updateStock(${p.id},this.value)"></label></div><div class="row" style="margin-top:8px"><input class="small" style="flex:1" value="${p.colors.join(", ")}" onchange="updateColors(${p.id},this.value)"><button class="btn small danger" onclick="removeProduct(${p.id})">Supprimer</button></div></div>`).join("")
+}
+function updatePrice(id,v){let p=products.find(x=>x.id===id);p.price=Number(v)||0;save();renderAdmin()}
+function updateStock(id,v){let p=products.find(x=>x.id===id);p.stock=Math.max(0,Number(v)||0);save();renderAdmin()}
+function updateColors(id,v){let p=products.find(x=>x.id===id);p.colors=v.split(",").map(x=>x.trim()).filter(Boolean);save();renderAdmin()}
+function removeProduct(id){if(confirm("Supprimer cette impression ?")){products=products.filter(p=>p.id!==id);save();renderAdmin()}}
+function finishOrder(id){let o=orders.find(x=>x.id===id);if(o)o.status="Terminée";save();renderAdmin()}
+function deleteOrder(id){orders=orders.filter(x=>x.id!==id);save();renderAdmin()}
+function addProduct(){
+let name=document.getElementById("newName").value.trim(),price=Number(document.getElementById("newPrice").value)||0,stock=Math.max(0,Number(document.getElementById("newStock").value)||0),colors=document.getElementById("newColors").value.split(",").map(x=>x.trim()).filter(Boolean),file=document.getElementById("newImage").files[0];
+if(!name||!colors.length)return alert("Remplis le nom et au moins une couleur.");
+const finish=(image="")=>{products.push({id:Date.now(),name,price,stock,colors,emoji:"🖨️",image});save();renderAdmin();alert("Impression ajoutée.");document.getElementById("newName").value=""};
+if(file){let r=new FileReader();r.onload=()=>finish(r.result);r.readAsDataURL(file)}else finish()
+}
+renderProducts();
+</script>
+</body>
+</html>
